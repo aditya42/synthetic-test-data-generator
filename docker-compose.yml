@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: stdg
+      POSTGRES_PASSWORD: stdg
+      POSTGRES_DB: stdg
+    ports:
+      - "5432:5432"
+    volumes:
+      - stdg_pg:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      PORT: 8081
+      HOST: 0.0.0.0
+      ENABLE_DB_PERSISTENCE: "true"
+      DATABASE_URL: postgres://stdg:stdg@postgres:5432/stdg
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-6-astra}
+      PII_BLOCK_MODE: ${PII_BLOCK_MODE:-strict}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      VITE_API_URL: http://127.0.0.1:8081
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  stdg_pg:

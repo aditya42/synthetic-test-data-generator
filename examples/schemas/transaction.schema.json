@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Synthetic Transaction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["transactionId", "customerId", "amount", "currency", "status", "createdAt"],
+  "properties": {
+    "transactionId": { "type": "string", "format": "uuid" },
+    "customerId": { "type": "string", "format": "uuid" },
+    "amount": { "type": "number", "minimum": 0.01, "maximum": 10000 },
+    "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR", "JPY"] },
+    "status": { "type": "string", "enum": ["AUTHORIZED", "CAPTURED", "DECLINED", "REFUNDED"] },
+    "createdAt": { "type": "string", "format": "date-time" }
+  }
+}

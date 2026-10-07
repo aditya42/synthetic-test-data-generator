@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Order API Payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["orderId", "quantity", "price", "promoCode", "shippingEmail"],
+  "properties": {
+    "orderId": { "type": "string", "format": "uuid" },
+    "quantity": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "price": { "type": "number", "minimum": 0, "maximum": 5000 },
+    "promoCode": { "type": "string", "minLength": 0, "maxLength": 12 },
+    "shippingEmail": { "type": "string", "format": "email" }
+  }
+}

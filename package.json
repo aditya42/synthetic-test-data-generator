@@ -1,0 +1,21 @@
+{
+  "name": "synthetic-test-data-generator",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @stdg/core && npm run build -w @stdg/api && npm run build -w @stdg/web",
+    "test": "npm run test -w @stdg/core",
+    "build:core": "npm run build -w @stdg/core",
+    "dev:api": "npm run build:core && npm run dev -w @stdg/api",
+    "dev:web": "npm run dev -w @stdg/web",
+    "start:api": "npm run build:core && npm run build -w @stdg/api && npm run start -w @stdg/api",
+    "doctor": "node scripts/doctor.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
