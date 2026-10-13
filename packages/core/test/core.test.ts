@@ -76,4 +76,76 @@ describe('core generator', () => {
     expect(scanForPii({ ip: '8.8.8.8' }).some(f => f.kind === 'ip')).toBe(true);
   });
 
+  // === New tests for deterministic generation with boundary length schema constraints ===
+  it('generates strings respecting minLength and maxLength constraints', () => {
+    const lengthSchema = {
+      type: 'object',
+      properties: {
+        shortString: { type: 'string', minLength: 3, maxLength: 5 },
+        exactString: { type: 'string', minLength: 4, maxLength: 4 },
+        longString: { type: 'string', minLength: 10, maxLength: 15 }
+      },
+      required: ['shortString', 'exactString', 'longString'],
+      additionalProperties: false
+    };
+
+    const generated = generateFromSchema(lengthSchema, { seed: 123, mode: 'valid' });
+
+    expect(generated.shortString.length).toBeGreaterThanOrEqual(3);
+    expect(generated.shortString.length).toBeLessThanOrEqual(5);
+
+    expect(generated.exactString.length).toBe(4);
+
+    expect(generated.longString.length).toBeGreaterThanOrEqual(10);
+    expect(generated.longString.length).toBeLessThanOrEqual(15);
+
+    expect(validateAgainstSchema(lengthSchema, generated).valid).toBe(true);
+    expect(scanForPii(generated)).toEqual([]);
+  });
+
+  it('generates consistent output for string length boundary schemas with same seed', () => {
+    const boundarySchema = {
+      type: 'object',
+      properties: {
+        fixedLength: { type: 'string', minLength: 6, maxLength: 6 },
+        minLengthOnly: { type: 'string', minLength: 8 },
+        maxLengthOnly: { type: 'string', maxLength: 12 }
+      },
+      required: ['fixedLength', 'minLengthOnly', 'maxLengthOnly'],
+      additionalProperties: false
+    };
+
+    const seed = 999;
+    const first = generateFromSchema(boundarySchema, { seed, mode: 'valid' });
+    const second = generateFromSchema(boundarySchema, { seed, mode: 'valid' });
+
+    expect(first).toEqual(second);
+
+    expect(first.fixedLength.length).toBe(6);
+    expect(first.minLengthOnly.length).toBeGreaterThanOrEqual(8);
+    expect(first.maxLengthOnly.length).toBeLessThanOrEqual(12);
+
+    expect(validateAgainstSchema(boundarySchema, first).valid).toBe(true);
+  });
+
+  it('handles zero-length string minLength and maxLength correctly', () => {
+    const zeroLengthSchema = {
+      type: 'object',
+      properties: {
+        emptyString: { type: 'string', minLength: 0, maxLength: 0 },
+        optionalString: { type: 'string', minLength: 0, maxLength: 2 }
+      },
+      required: ['emptyString', 'optionalString'],
+      additionalProperties: false
+    };
+
+    const generated = generateFromSchema(zeroLengthSchema, { seed: 77, mode: 'valid' });
+
+    expect(generated.emptyString).toBe('');
+    expect(generated.optionalString.length).toBeGreaterThanOrEqual(0);
+    expect(generated.optionalString.length).toBeLessThanOrEqual(2);
+
+    expect(validateAgainstSchema(zeroLengthSchema, generated).valid).toBe(true);
+    expect(scanForPii(generated)).toEqual([]);
+  });
 });
