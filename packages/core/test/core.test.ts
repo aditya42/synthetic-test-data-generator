@@ -66,4 +66,14 @@ describe('core generator', () => {
 
     expect(findings).toEqual([]);
   });
+  it('does not flag reserved documentation IPs as PII or phone numbers', () => {
+    for (const ip of ['192.0.2.123', '198.51.100.1', '203.0.113.255']) {
+      expect(scanForPii({ ip })).toEqual([]);
+    }
+  });
+
+  it('continues to flag non-documentation IPv4 addresses', () => {
+    expect(scanForPii({ ip: '8.8.8.8' }).some(f => f.kind === 'ip')).toBe(true);
+  });
+
 });

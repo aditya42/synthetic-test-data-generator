@@ -151,8 +151,13 @@ function scanString(
    * UUIDs and ISO timestamps contain digit/hyphen patterns that
    * generic phone detection can incorrectly identify as PII.
    */
+  // Whole-value documentation IPv4 addresses are safe synthetic fixtures.
+  // Avoid classifying their digit groups as phone numbers. IP checking
+  // below still handles unsafe addresses normally.
+  const safeDocumentationIp =
+    /^(?:\d{1,3}\.){3}\d{1,3}$/.test(value) && isSafeIpv4(value);
   const structuredSyntheticValue =
-    isUuid(value) || isIsoDate(value);
+    isUuid(value) || isIsoDate(value) || safeDocumentationIp;
 
   EMAIL_REGEX.lastIndex = 0;
 
