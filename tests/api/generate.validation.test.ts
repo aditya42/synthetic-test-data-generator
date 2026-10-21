@@ -113,4 +113,33 @@ describe('POST /generate input validation', () => {
       expect(res.body.records.length).toBe(1);
     });
   });
+
+  describe('PII block mode error recovery on LLM generation path', () => {
+    const piiSchema = {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        email: { type: 'string', format: 'email' }
+      },
+      required: ['email']
+    };
+
+    it('returns 422 with piiFindings when generated LLM output contains PII and piiBlockMode is strict', async () => {
+      // A prompt designed to encourage LLM to produce an email detected as PII
+      const prompt = 'Please generate one record with a real email address like jane.doe@example.gov';
+
+      const res = await request(app).post('/generate').send({
+        schema: piiSchema,
+        count: 1,
+        useLlm: true,
+        prompt
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.error).toMatch(/generated data blocked by pii safeguard/i);
+      expect(Array.isArray(res.body.piiFindings)).toBe(true);
+      expect(res.body.piiFindings.length).toBeGreaterThan(0);
+      expect(res.body.piiFindings.some(f => f.kind === 'email')).toBe(true);
+    });
+  });
 });
