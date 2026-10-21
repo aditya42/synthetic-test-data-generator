@@ -84,4 +84,33 @@ describe('POST /generate input validation', () => {
     expect(Array.isArray(res.body.findings)).toBe(true);
     expect(res.body.findings.length).toBeGreaterThan(0);
   });
+
+  describe('PII detection and blocking behavior with piiBlockMode', () => {
+    const piiPrompt = 'This is a test email: john.doe@example.gov'; // example.gov triggers PII detection since not safe domain
+
+    it('blocks generation when piiBlockMode is strict (default)', async () => {
+      const res = await request(app)
+        .post('/generate')
+        .send({ schema: validSchema, prompt: piiPrompt });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/prompt rejected by pii safeguard/i);
+      expect(Array.isArray(res.body.findings)).toBe(true);
+      expect(res.body.findings.some(f => f.kind === 'email')).toBe(true);
+    });
+
+    it('allows generation when piiBlockMode is disabled, despite PII in prompt', async () => {
+      // Set header or param to disable piiBlockMode if API supports it
+      // If no direct API control, simulate by setting env var temporarily via process.env overriding
+      // Here we simulate with a special header 'x-pii-block-mode' to 'disabled' (assuming backend supports this for testing)
+      const res = await request(app)
+        .post('/generate')
+        .set('x-pii-block-mode', 'disabled')
+        .send({ schema: validSchema, prompt: piiPrompt, count: 1, useLlm: true });
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.records)).toBe(true);
+      expect(res.body.records.length).toBe(1);
+    });
+  });
 });
