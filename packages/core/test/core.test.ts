@@ -148,4 +148,36 @@ describe('core generator', () => {
     expect(validateAgainstSchema(zeroLengthSchema, generated).valid).toBe(true);
     expect(scanForPii(generated)).toEqual([]);
   });
+
+  // === New test for deterministic numeric boundary values ===
+  it('generates deterministic output with numeric boundaries respecting min and max constraints', () => {
+    const numericBoundarySchema = {
+      type: 'object',
+      properties: {
+        minimumValue: { type: 'number', minimum: 10, maximum: 20 },
+        maximumValue: { type: 'integer', minimum: 100, maximum: 200 }
+      },
+      required: ['minimumValue', 'maximumValue'],
+      additionalProperties: false
+    };
+
+    const seed = 12345;
+    const first = generateFromSchema(numericBoundarySchema, { seed, mode: 'valid' });
+    const second = generateFromSchema(numericBoundarySchema, { seed, mode: 'valid' });
+
+    expect(first).toEqual(second);
+
+    expect(typeof first.minimumValue).toBe('number');
+    expect(first.minimumValue).toBeGreaterThanOrEqual(10);
+    expect(first.minimumValue).toBeLessThanOrEqual(20);
+
+    expect(typeof first.maximumValue).toBe('number');
+    // maximumValue is integer type
+    expect(Number.isInteger(first.maximumValue)).toBe(true);
+    expect(first.maximumValue).toBeGreaterThanOrEqual(100);
+    expect(first.maximumValue).toBeLessThanOrEqual(200);
+
+    expect(validateAgainstSchema(numericBoundarySchema, first).valid).toBe(true);
+    expect(scanForPii(first)).toEqual([]);
+  });
 });
