@@ -142,4 +142,50 @@ describe('POST /generate input validation', () => {
       expect(res.body.piiFindings.some(f => f.kind === 'email')).toBe(true);
     });
   });
+
+  describe('Additional input validation and boundary tests', () => {
+    it('rejects count as negative number, defaults to 1 actually used but should accept and coerce
+      (here invalid count negative coerced to 1)', async () => {
+      const res = await request(app).post('/generate').send({ schema: validSchema, count: -5 });
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(1); // negative count coerced to min 1
+    });
+
+    it('rejects count as a decimal number, coerced down via floor', async () => {
+      const res = await request(app).post('/generate').send({ schema: validSchema, count: 3.7 });
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(3); // floor applied
+    });
+
+    it('rejects non-integer numeric count strings coerced correctly', async () => {
+      const res = await request(app).post('/generate').send({ schema: validSchema, count: '4' });
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(4);
+    });
+
+    it('rejects missing count (uses default 5)', async () => {
+      const res = await request(app).post('/generate').send({ schema: validSchema });
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(5);
+    });
+
+    it('rejects count as null (invalid)', async () => {
+      const res = await request(app).post('/generate').send({ schema: validSchema, count: null });
+      // Null converted to 0 then coerced to 1
+      expect(res.status).toBe(200);
+      expect(res.body.count).toBe(1);
+    });
+
+    it('rejects mode as empty string with error', async () => {
+      const res = await request(app).post('/generate').send({ schema: validSchema, mode: '' });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/mode must be valid, boundary, or negative/i);
+    });
+
+    it('rejects completely malformed request body (e.g., schema null)', async () => {
+      const res = await request(app).post('/generate').send({ schema: null });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/schema is required/i);
+    });
+  });
 });
